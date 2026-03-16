@@ -3,7 +3,7 @@ import { ChatContainer } from "@/components/chat/chat-container";
 import { ApiKeyModal } from "@/components/settings/api-key-modal";
 import { useApiKey } from "@/hooks/use-api-key";
 import { useChat } from "@/hooks/use-chat";
-import { useProvider } from "@/hooks/use-provider";
+import { MODEL_LABEL } from "@/types";
 
 function KeyIcon() {
   return (
@@ -23,9 +23,8 @@ function TrashIcon() {
 }
 
 export default function App() {
-  const { providerId, provider, setProviderId } = useProvider();
-  const { apiKey, hasApiKey, setApiKey, removeApiKey, isValidApiKeyFormat } = useApiKey(provider);
-  const { messages, isStreaming, error, sendMessage, resetChat } = useChat(apiKey, provider);
+  const { apiKey, hasApiKey, setApiKey, removeApiKey, isValidApiKeyFormat } = useApiKey();
+  const { messages, isStreaming, error, sendMessage, resetChat } = useChat(apiKey);
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
   useEffect(() => {
@@ -35,11 +34,9 @@ export default function App() {
   }, [hasApiKey]);
 
   const headerSubline = useMemo(() => {
-    if (!hasApiKey) {
-      return "BYOK required";
-    }
-    return `${provider.label} · ${provider.model}`;
-  }, [hasApiKey, provider]);
+    if (!hasApiKey) return "API key required";
+    return `Gemini · ${MODEL_LABEL}`;
+  }, [hasApiKey]);
 
   const handleSend = useCallback(
     (content: string) => {
@@ -73,12 +70,10 @@ export default function App() {
 
       <ApiKeyModal
         isOpen={isKeyModalOpen}
-        providerId={providerId}
         initialValue={apiKey}
         onSave={setApiKey}
         onClose={() => setIsKeyModalOpen(false)}
         onRemove={removeApiKey}
-        onChangeProvider={setProviderId}
         validate={isValidApiKeyFormat}
       />
     </main>

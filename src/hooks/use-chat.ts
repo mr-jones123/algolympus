@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { createClient } from "@/lib/openai";
 import { SYSTEM_PROMPT } from "@/lib/prompts/system-prompt";
-import type { ChatMessage, MessageSegment, ProviderConfig, UseChatResult } from "@/types";
+import { MODEL, type ChatMessage, type MessageSegment, type UseChatResult } from "@/types";
 
 function findClosingFence(raw: string, searchFrom: number): number {
   let pos = searchFrom;
@@ -75,7 +75,7 @@ function parseMessageSegments(raw: string): MessageSegment[] {
   return segments;
 }
 
-export function useChat(apiKey: string, provider: ProviderConfig): UseChatResult {
+export function useChat(apiKey: string): UseChatResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,8 +91,8 @@ export function useChat(apiKey: string, provider: ProviderConfig): UseChatResult
       const trimmed = content.trim();
       if (!trimmed || isStreaming) return;
 
-      if (!apiKey || !apiKey.startsWith(provider.keyPrefix)) {
-        setError(`Set a valid ${provider.label} API key before sending messages.`);
+      if (!apiKey || !apiKey.startsWith("AI")) {
+        setError("Set a valid Gemini API key before sending messages.");
         return;
       }
 
@@ -119,24 +119,29 @@ export function useChat(apiKey: string, provider: ProviderConfig): UseChatResult
       setIsStreaming(true);
 
       try {
-        const client = createClient(apiKey, provider);
-        const stream = await client.chat.completions.create({
-          model: provider.model,
-          stream: true,
-          temperature: 0.4,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...messages.map((m) => ({ role: m.role, content: m.raw })),
-            { role: "user", content: trimmed },
-          ],
+        const client = createClient(apiKey);
+        const chat = client.chats.create({
+          model: MODEL,
+          config: {
+            temperature: 0.4,
+            systemInstruction: SYSTEM_PROMPT,
+          },
+          history: messages.map((m) => ({
+            role: m.role === "user" ? "user" as const : "model" as const,
+            parts: [{ text: m.raw }],
+          })),
+        });
+
+        const response = await chat.sendMessageStream({
+          message: trimmed,
         });
 
         let accumulated = "";
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content;
-          if (!delta || !isMountedRef.current) continue;
+        for await (const chunk of response) {
+          const text = chunk.text;
+          if (!text || !isMountedRef.current) continue;
 
-          accumulated += delta;
+          accumulated += text;
           const parsed = parseMessageSegments(accumulated);
 
           setMessages((current) =>
@@ -154,7 +159,7 @@ export function useChat(apiKey: string, provider: ProviderConfig): UseChatResult
         if (isMountedRef.current) setIsStreaming(false);
       }
     },
-    [apiKey, provider, isStreaming, messages],
+    [apiKey, isStreaming, messages],
   );
 
   return { messages, isStreaming, error, sendMessage, resetChat };

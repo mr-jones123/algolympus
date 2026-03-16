@@ -1,34 +1,27 @@
 import { useCallback, useEffect, useState, type ComponentProps } from "react";
-import { PROVIDERS, type ProviderId } from "@/types";
+import { KEY_PLACEHOLDER } from "@/types";
 
 type FormSubmitEvent = Parameters<NonNullable<ComponentProps<"form">["onSubmit"]>>[0];
 
 interface ApiKeyModalProps {
   isOpen: boolean;
-  providerId: ProviderId;
   initialValue: string;
   onSave: (value: string) => void;
   onClose: () => void;
   onRemove: () => void;
-  onChangeProvider: (id: ProviderId) => void;
   validate: (value: string) => boolean;
 }
 
-const PROVIDER_IDS: ProviderId[] = ["gemini", "openai"];
-
 export function ApiKeyModal({
   isOpen,
-  providerId,
   initialValue,
   onSave,
   onClose,
   onRemove,
-  onChangeProvider,
   validate,
 }: ApiKeyModalProps) {
   const [draft, setDraft] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
-  const provider = PROVIDERS[providerId];
 
   useEffect(() => {
     if (isOpen) {
@@ -42,14 +35,14 @@ export function ApiKeyModal({
       event.preventDefault();
       const trimmed = draft.trim();
       if (!validate(trimmed)) {
-        setError(`${provider.label} keys should start with ${provider.keyPrefix} and be at least 20 characters.`);
+        setError("Gemini keys should start with AIza and be at least 20 characters.");
         return;
       }
 
       onSave(trimmed);
       onClose();
     },
-    [draft, onClose, onSave, validate, provider],
+    [draft, onClose, onSave, validate],
   );
 
   if (!isOpen) {
@@ -67,30 +60,17 @@ export function ApiKeyModal({
         </div>
 
         <p className="modal-copy">
-          Your key is stored locally in this browser and only sent directly to {provider.label}.
+          Your key is stored locally in this browser and only sent directly to Google.
         </p>
 
-        <div className="provider-toggle">
-          {PROVIDER_IDS.map((id) => (
-            <button
-              key={id}
-              type="button"
-              className={`provider-chip ${id === providerId ? "provider-chip-active" : ""}`}
-              onClick={() => onChangeProvider(id)}
-            >
-              {PROVIDERS[id].label}
-            </button>
-          ))}
-        </div>
-
         <form onSubmit={handleSubmit} className="modal-form">
-          <label htmlFor="api-key-input">{provider.label} API key</label>
+          <label htmlFor="api-key-input">Gemini API key</label>
           <input
             id="api-key-input"
             type="password"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder={provider.keyPlaceholder}
+            placeholder={KEY_PLACEHOLDER}
             autoComplete="off"
             spellCheck={false}
           />

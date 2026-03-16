@@ -1,59 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ProviderId, ProviderConfig } from "@/types";
+import { KEY_PREFIX } from "@/types";
 
-function storageKey(providerId: ProviderId): string {
-  return `algolympus.${providerId}.apiKey`;
-}
+const STORAGE_KEY = "algolympus.gemini.apiKey";
 
-function readStoredApiKey(providerId: ProviderId): string {
-  if (typeof window === "undefined") {
-    return "";
-  }
-  return localStorage.getItem(storageKey(providerId)) ?? "";
-}
-
-function isValidKey(value: string, provider: ProviderConfig): boolean {
+function isValidKey(value: string): boolean {
   const trimmed = value.trim();
-  return trimmed.startsWith(provider.keyPrefix) && trimmed.length >= 20;
+  return trimmed.startsWith(KEY_PREFIX) && trimmed.length >= 20;
 }
 
-export function useApiKey(provider: ProviderConfig) {
+export function useApiKey() {
   const [apiKey, setApiKeyState] = useState<string>("");
 
   useEffect(() => {
-    setApiKeyState(readStoredApiKey(provider.id));
-  }, [provider.id]);
+    setApiKeyState(localStorage.getItem(STORAGE_KEY) ?? "");
+  }, []);
 
-  const hasApiKey = useMemo(() => isValidKey(apiKey, provider), [apiKey, provider]);
+  const hasApiKey = useMemo(() => isValidKey(apiKey), [apiKey]);
 
-  const setApiKey = useCallback(
-    (nextKey: string) => {
-      const normalized = nextKey.trim();
-      setApiKeyState(normalized);
-      if (normalized.length === 0) {
-        localStorage.removeItem(storageKey(provider.id));
-        return;
-      }
-      localStorage.setItem(storageKey(provider.id), normalized);
-    },
-    [provider.id],
-  );
+  const setApiKey = useCallback((nextKey: string) => {
+    const normalized = nextKey.trim();
+    setApiKeyState(normalized);
+    if (normalized.length === 0) {
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY, normalized);
+  }, []);
 
   const removeApiKey = useCallback(() => {
     setApiKeyState("");
-    localStorage.removeItem(storageKey(provider.id));
-  }, [provider.id]);
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
 
-  const isValidApiKeyFormat = useCallback(
-    (value: string) => isValidKey(value, provider),
-    [provider],
-  );
+  const isValidApiKeyFormat = useCallback((value: string) => isValidKey(value), []);
 
-  return {
-    apiKey,
-    hasApiKey,
-    setApiKey,
-    removeApiKey,
-    isValidApiKeyFormat,
-  };
+  return { apiKey, hasApiKey, setApiKey, removeApiKey, isValidApiKeyFormat };
 }
