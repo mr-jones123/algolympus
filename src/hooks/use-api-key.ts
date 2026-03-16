@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { KEY_PREFIX } from "@/types";
 
 const STORAGE_KEY = "algolympus.gemini.apiKey";
@@ -15,9 +15,9 @@ export function useApiKey() {
     setApiKeyState(localStorage.getItem(STORAGE_KEY) ?? "");
   }, []);
 
-  const hasApiKey = useMemo(() => isValidKey(apiKey), [apiKey]);
+  const hasApiKey = isValidKey(apiKey);
 
-  const setApiKey = useCallback((nextKey: string) => {
+  const setApiKey = (nextKey: string) => {
     const normalized = nextKey.trim();
     setApiKeyState(normalized);
     if (normalized.length === 0) {
@@ -25,14 +25,12 @@ export function useApiKey() {
       return;
     }
     localStorage.setItem(STORAGE_KEY, normalized);
-  }, []);
+  };
 
-  const removeApiKey = useCallback(() => {
+  const removeApiKey = () => {
     setApiKeyState("");
     localStorage.removeItem(STORAGE_KEY);
-  }, []);
+  };
 
-  const isValidApiKeyFormat = useCallback((value: string) => isValidKey(value), []);
-
-  return { apiKey, hasApiKey, setApiKey, removeApiKey, isValidApiKeyFormat };
+  return { apiKey, hasApiKey, setApiKey, removeApiKey, isValidApiKeyFormat: isValidKey };
 }

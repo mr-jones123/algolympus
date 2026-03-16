@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { createClient } from "@/lib/openai";
+import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT } from "@/lib/prompts/system-prompt";
 import { MODEL, type ChatMessage, type MessageSegment, type UseChatResult } from "@/types";
 
@@ -119,7 +119,7 @@ export function useChat(apiKey: string): UseChatResult {
       setIsStreaming(true);
 
       try {
-        const client = createClient(apiKey);
+        const client = new GoogleGenAI({ apiKey });
         const chat = client.chats.create({
           model: MODEL,
           config: {
